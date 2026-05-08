@@ -1,0 +1,193 @@
+==============================================================
+  GitHub Repository Intelligence Tool — RUNNING INSTRUCTIONS
+==============================================================
+
+FOLDER STRUCTURE
+----------------
+github-intel/
+├── backend/
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   └── search_agent.py       ← LangGraph + Groq LLM agent
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py             ← Settings via pydantic-settings
+│   │   ├── ingestion.py          ← GitHub clone + file walker
+│   │   ├── chunker.py            ← Symbol-aware code chunker
+│   │   └── vectorstore.py        ← ChromaDB + sentence-transformers
+│   ├── main.py                   ← FastAPI app (all routes)
+│   ├── cli.py                    ← Typer CLI interface
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
+├── frontend/
+│   ├── public/index.html
+│   ├── src/
+│   │   ├── App.js                ← Full React UI
+│   │   ├── index.js
+│   │   └── hooks/api.js          ← Axios API calls
+│   ├── package.json
+│   ├── Dockerfile
+│   └── nginx.conf
+└── docker-compose.yml
+
+
+==============================================================
+  OPTION A: Run Manually (Recommended for Development)
+==============================================================
+
+STEP 1 — Clone & Setup
+-----------------------
+git clone <your-repo-url>
+cd github-intel
+
+STEP 2 — Configure Environment
+--------------------------------
+cd backend
+cp .env.example .env
+
+# Open .env and set your GROQ API key:
+#   GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
+#
+# Get free API key at: https://console.groq.com
+
+STEP 3 — Backend Setup
+------------------------
+cd backend
+
+# Create virtual environment
+python -m venv venv
+
+# Activate (Linux/Mac):
+source venv/bin/activate
+
+# Activate (Windows):
+venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+STEP 4 — Start Backend (FastAPI)
+----------------------------------
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# API will be available at: http://localhost:8000
+# API docs (Swagger UI) at: http://localhost:8000/docs
+
+STEP 5 — Frontend Setup (new terminal)
+----------------------------------------
+cd frontend
+npm install
+npm start
+
+# Frontend will open at: http://localhost:3000
+
+
+==============================================================
+  OPTION B: Docker Compose (One-Command Setup)
+==============================================================
+
+STEP 1 — Set your Groq API key
+--------------------------------
+cd backend
+cp .env.example .env
+# Edit .env → set GROQ_API_KEY=gsk_xxxx
+
+STEP 2 — Start everything
+---------------------------
+cd ..  # back to github-intel root
+docker-compose up --build
+
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:8000
+# API Docs: http://localhost:8000/docs
+
+
+==============================================================
+  OPTION C: CLI Only (No Frontend needed)
+==============================================================
+
+# After backend setup (Steps 1-3 from Option A):
+
+cd backend
+source venv/bin/activate
+
+# 1. Index a repository
+python cli.py ingest https://github.com/tiangolo/fastapi
+
+# 2. Note the repo_id printed (e.g., a1b2c3d4e5f6)
+
+# 3. Ask natural language questions
+python cli.py query a1b2c3d4e5f6 "Where is the authentication logic?"
+python cli.py query a1b2c3d4e5f6 "Which file handles database connections?"
+python cli.py query a1b2c3d4e5f6 "Show me all API endpoints defined"
+python cli.py query a1b2c3d4e5f6 "Where is the login function?"
+
+# 4. Raw semantic search (no LLM, instant)
+python cli.py search a1b2c3d4e5f6 "database connection"
+
+# 5. Check index status
+python cli.py status a1b2c3d4e5f6
+
+
+==============================================================
+  API ENDPOINTS REFERENCE
+==============================================================
+
+POST /ingest
+  Body: { "github_url": "https://github.com/owner/repo" }
+  Returns: { repo_id, status, message }
+
+GET  /status/{repo_id}
+  Returns: { status, message, indexed_chunks, file_count }
+
+POST /query
+  Body: { "repo_id": "abc123", "query": "Where is auth?" }
+  Returns: { answer, results: [{file_path, start_line, end_line, symbol_name, score, snippet}] }
+
+GET  /search/{repo_id}?q=database&top_k=5
+  Returns raw semantic search hits (no LLM)
+
+GET  /repos
+  Returns all tracked repositories
+
+
+==============================================================
+  HOW IT WORKS (Architecture)
+==============================================================
+
+1. INGEST: GitPython clones the repo shallowly (depth=1)
+2. PARSE:  Walk all supported files, skip node_modules/.git etc.
+3. CHUNK:  Symbol-aware chunking — anchors chunks to function/class
+           boundaries using regex. Falls back to sliding window.
+4. EMBED:  sentence-transformers (all-MiniLM-L6-v2) creates vectors
+5. STORE:  ChromaDB persists vectors locally with cosine similarity
+6. QUERY:  LangGraph pipeline:
+           retrieve_node → semantic search top-10 chunks
+           analyse_node  → Groq LLaMA-3 70B generates structured answer
+7. RETURN: File paths + line numbers + symbol names + explanation
+
+
+==============================================================
+  TROUBLESHOOTING
+==============================================================
+
+ERROR: "GROQ_API_KEY not set"
+→ Make sure you copied .env.example to .env and set your key
+→ Get key free at https://console.groq.com
+
+ERROR: "Repository not indexed"
+→ Call /ingest first, then poll /status/{repo_id} until "ready"
+
+ERROR: "git not found"
+→ Install git: sudo apt install git  (Linux)
+→ Or: brew install git  (Mac)
+
+ERROR: chromadb import fails
+→ pip install chromadb==0.5.0 --force-reinstall
+
+Slow first query:
+→ sentence-transformers downloads the embedding model on first run (~90MB)
+→ Subsequent runs use cached model
+
+==============================================================
