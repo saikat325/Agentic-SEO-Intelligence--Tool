@@ -285,7 +285,15 @@ Frontend opens at: `http://localhost:3000`
 ---
 
 ## 4.5 Usage Examples
-
+**Query:** *"Where is the authentication logic implemented?"*
+> This test proves the tool can navigate complex agentic logic across files.
+<br/>
+<div align="center">
+  <img src="Screenshot 2026-05-08 160952.png" alt="SEO Analysis Query" width="800">
+   <img src="Screenshot 2026-05-08 161155.png" alt="SEO Analysis Query" width="800">
+    <img src="Screenshot 2026-05-08 161217.png" alt="SEO Analysis Query" width="800">
+  
+</div>
 
 ---
 
