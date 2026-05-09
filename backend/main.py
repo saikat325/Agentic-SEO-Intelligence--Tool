@@ -48,6 +48,7 @@ class StatusResponse(BaseModel):
     file_count: Optional[int] = None
 
 
+
 # ─── Background Indexing ──────────────────────────────────────────────────────
 
 async def index_repo_background(github_url: str, repo_id: str):

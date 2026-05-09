@@ -39,7 +39,7 @@ def index_chunks(repo_id: str, chunks: List[Dict[str, Any]]) -> int:
     model = get_embed_model()
     col_name = collection_name(repo_id)
 
-    # Delete old collection if exists (re-index)
+    # Delete old collection if exists (like re-index)
     try:
         client.delete_collection(col_name)
     except Exception:

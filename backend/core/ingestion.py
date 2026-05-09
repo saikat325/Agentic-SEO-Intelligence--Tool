@@ -73,7 +73,7 @@ def clone_repository(github_url: str) -> Dict[str, Any]:
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
             zf.extractall(Path(settings.repos_dir) / f"{repo_id}_tmp")
 
-        # GitHub ZIP contains a top-level folder like "repo-main/"
+        # GitHub ZIP contains a top-level folder like "repo-main/ "
         tmp_root = Path(settings.repos_dir) / f"{repo_id}_tmp"
         inner_dirs = [d for d in tmp_root.iterdir() if d.is_dir()]
         if inner_dirs:

@@ -1,6 +1,7 @@
 {
   "name": "github-intel-ui",
   "version": "1.0.0",
+  
   "private": true,
   "dependencies": {
     "react": "^18.3.1",

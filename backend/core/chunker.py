@@ -79,6 +79,7 @@ def chunk_file(file_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     overlap = settings.chunk_overlap
 
     # Symbol-aware chunking: anchor each chunk to a symbol boundary if possible
+    
     if symbols:
         for idx, sym in enumerate(symbols):
             start_line = sym["line"] - 1  # 0-indexed
